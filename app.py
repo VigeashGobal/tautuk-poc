@@ -95,11 +95,11 @@ def init_state():
     if "data" not in st.session_state:
         st.session_state.data = pd.DataFrame(columns=["ts", "room", *METRICS])
 
-def generate_reading(force_high_co2=False):
+def generate_reading(force_high_co2=False, force_high_pm=False, force_high_temp=False):
     """
     Mean-reverting random walk:
     - keeps metrics inside "good" band (± small wiggle)
-    - big spike only when force_high_co2=True
+    - big spike only when force_high_* is True
     """
     TARGET = dict(co2=650, temp=23, rh=50, pm=8)   # comfortable mid-points
     SD     = dict(co2=8,   temp=0.25, rh=0.8, pm=0.8)  # noise stdev
@@ -116,6 +116,12 @@ def generate_reading(force_high_co2=False):
     for k in TARGET:
         if k == "co2" and force_high_co2:
             nxt[k] = 1200  # trigger alert on cue
+            continue
+        if k == "pm" and force_high_pm:
+            nxt[k] = 40  # high PM2.5
+            continue
+        if k == "temp" and force_high_temp:
+            nxt[k] = 29  # high temp
             continue
         # mean-reversion towards TARGET + small noise
         drift = 0.12 * (TARGET[k] - base[k])
@@ -139,25 +145,22 @@ st.sidebar.write("- Boost productivity by preventing stale air")
 st.sidebar.write("- Cut HVAC energy with demand-based ventilation")
 st.sidebar.write("- Auto-document IAQ compliance")
 
-demo_toggle = st.sidebar.checkbox("💡 Force high CO₂ demo", value=False)
-
-# --------- create a new reading each run ---------
-# simulate 1% chance a sensor skips
-row=generate_reading(demo_toggle)
-if random.random()>0.01: st.session_state.data.loc[len(st.session_state.data)] = row
-# update last-seen dict
-lst=st.session_state.setdefault("device_last_seen",{}); lst[row["room"]]=_dt.datetime.utcnow()
-
-# keep last 1440 rows (~24 h @1 min) to limit memory
-if len(st.session_state.data) > 1440:
-    st.session_state.data = st.session_state.data.iloc[-1440:]
-
 st.title("Tautuk – Operational Resource Intelligence (POC)")
 
 # Tabs for main content
 main_tab, floor_tab, trends_tab, roi_tab, report_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends", "ROI & Cost", "Reporting"])
 
 with main_tab:
+    # Demo toggles
+    st.markdown("#### Demo Conditions")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        demo_co2 = st.checkbox("💡 Force high CO₂ demo", value=False, key="demo_co2")
+    with col2:
+        demo_pm = st.checkbox("💡 Force high PM2.5 demo", value=False, key="demo_pm")
+    with col3:
+        demo_temp = st.checkbox("💡 Force high Temp demo", value=False, key="demo_temp")
+
     # device health row
     st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
 
@@ -234,3 +237,18 @@ with report_tab:
         badge = overall_iaq_status(latest)
         pdf_bytes=build_pdf(st.session_state.data, badge.upper())
         st.download_button("Download 1-week PDF", pdf_bytes,"tauk_report.pdf",mime="application/pdf",key="pdf")
+
+# --------- create a new reading each run ---------
+# simulate 1% chance a sensor skips
+row=generate_reading(
+    force_high_co2=st.session_state.get("demo_co2", False),
+    force_high_pm=st.session_state.get("demo_pm", False),
+    force_high_temp=st.session_state.get("demo_temp", False)
+)
+if random.random()>0.01: st.session_state.data.loc[len(st.session_state.data)] = row
+# update last-seen dict
+lst=st.session_state.setdefault("device_last_seen",{}); lst[row["room"]]=_dt.datetime.utcnow()
+
+# keep last 1440 rows (~24 h @1 min) to limit memory
+if len(st.session_state.data) > 1440:
+    st.session_state.data = st.session_state.data.iloc[-1440:]
