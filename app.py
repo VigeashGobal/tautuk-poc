@@ -6,8 +6,9 @@ from collections import OrderedDict
 # ---- custom CSS ----
 st.markdown("""
 <style>
-/* Remove Streamlit padding */
-section.main > div:first-child {padding-top: 0.5rem;}
+html,body{overflow-x:hidden;} section.main>div{padding-top:.3rem;padding-bottom:.3rem;}
+h1{font-size:2.1rem;margin:0.4rem 0 0.8rem;} .card-grid{margin:0.6rem 0;gap:0.9rem;}
+.badge{margin-top:0.3rem;}
 /* Card grid */
 .card-grid {display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 1.25rem; margin: 1.2rem 0;}
 .metric-card {background: var(--secondary-background-color); border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.04); padding: 1.1rem 1rem; text-align: center; transition: transform .15s;}
@@ -46,7 +47,7 @@ def overall_iaq_status(row):
 # ---------- config ----------
 ROOMS   = ["Office A", "Office B", "Lab"]
 METRICS = ["co2", "temp", "rh", "pm"]
-REFRESH_MS = 1_000   # 1 s
+REFRESH_MS = 2000   # 2 s
 
 # ---------- helpers ----------
 def init_state():
@@ -54,13 +55,21 @@ def init_state():
         st.session_state.data = pd.DataFrame(columns=["ts", "room", *METRICS])
 
 def generate_reading(force_high_co2=False):
+    """AR(1)-style drift so values change smoothly"""
+    base = st.session_state.get("last_reading", {
+        "co2":650, "temp":23, "rh":50, "pm":10
+    })
+    nxt = {
+        "co2": (0.9*base["co2"] + np.random.normal(0,15)) if not force_high_co2 else 1200,
+        "temp": (0.9*base["temp"] + np.random.normal(0,0.3)),
+        "rh"  : (0.9*base["rh"]  + np.random.normal(0,1.0)),
+        "pm"  : max(0, 0.8*base["pm"] + np.random.normal(0,1))
+    }
+    st.session_state.last_reading = nxt
     return {
         "ts": datetime.datetime.utcnow(),
         "room": random.choice(ROOMS),
-        "co2": 1200 if force_high_co2 else np.random.normal(650, 120),
-        "temp": np.random.uniform(20, 27),
-        "rh": np.random.uniform(35, 60),
-        "pm": abs(np.random.normal(12, 6)),
+        **nxt,
     }
 
 # ---------- page setup ----------
@@ -93,38 +102,43 @@ badge = overall_iaq_status(latest)
 color = STATUS_COLORS[badge]
 st.markdown(f"<span class=\"badge\" style=\"background:{color}\">Overall Air Quality: {badge.upper()}</span>", unsafe_allow_html=True)
 
-st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
-for m,label,unit in [
-  ("co2","CO₂","ppm"),
-  ("temp","Temp","°C"),
-  ("rh","Humidity","%"),
-  ("pm","PM2.5","µg/m³")]:
-    state = status_color(m, latest[m])
-    bar  = STATUS_COLORS[state]
-    val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
-    st.markdown(
-        f"""
-        <div class='metric-card'>
-          <div class='metric-border' style='background:{bar}'></div>
-          <div class='metric-label'>{label}</div>
-          <div class='metric-value'>{val} <span class='metric-unit'>{unit}</span></div>
-        </div>
-        """, unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
+container = st.container()
+left,right = container.columns([2,1])
+with left:
+    st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
+    for m,label,unit in [
+      ("co2","CO₂","ppm"),
+      ("temp","Temp","°C"),
+      ("rh","Humidity","%"),
+      ("pm","PM2.5","µg/m³")]:
+        state = status_color(m, latest[m])
+        bar  = STATUS_COLORS[state]
+        val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
+        st.markdown(
+            f"""
+            <div class='metric-card'>
+              <div class='metric-border' style='background:{bar}'></div>
+              <div class='metric-label'>{label}</div>
+              <div class='metric-value'>{val} <span class='metric-unit'>{unit}</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # ----- alert banner remains unchanged
 if latest.co2 > 1000:
     st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
 
+with right:
+    st.markdown("### 🧠 AI Insights")
+    if st.button("🔄 Refresh insights"):
+        openai_helper._CACHE["ts"] = None
+    st.markdown(openai_helper.generate_insight(st.session_state.data))
+
+# --- chart and extras below ---
+
 with st.expander("24-hour trends", expanded=False):
     if len(st.session_state.data) > 0:
         chart = st.session_state.data.set_index("ts")[METRICS]
-        st.line_chart(chart)
+        st.line_chart(chart, height=180)
     else:
         st.info("No data yet - chart will appear once readings are collected")
-
-# --- AI insight panel ---
-st.markdown("### 🧠 AI-Generated Insights (updates every 5 min)")
-if st.button("🔄 Refresh insights"):
-    openai_helper._CACHE["ts"] = None  # invalidate cache
-st.markdown(openai_helper.generate_insight(st.session_state.data))
