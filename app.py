@@ -205,8 +205,6 @@ init_state()
 # auto-refresh (returns a counter we could use if needed)
 st_autorefresh(interval=REFRESH_MS, key="auto")
 
-st.title("Tautuk – Operational Resource Intelligence (POC)")
-
 # Tabs for main content
 main_tab, floor_tab, trends_tab, roi_tab, report_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends", "ROI & Cost", "Reporting"])
 
