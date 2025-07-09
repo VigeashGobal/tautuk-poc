@@ -1,4 +1,5 @@
 import streamlit as st, pandas as pd, numpy as np, time, threading, random, datetime
+from streamlit_autorefresh import st_autorefresh
 
 ROOMS = ["Office A", "Office B", "Lab"]
 METRICS = ["co2", "temp", "rh", "pm"]
@@ -24,6 +25,9 @@ def simulate():
 st.set_page_config(page_title="Tautuk POC", layout="wide")
 init_state()
 
+# refresh the page every 1 000 ms so new readings appear
+st_autorefresh(interval=1000, key="data_refresh")
+
 # start simulator once
 if "sim_thread" not in st.session_state:
     threading.Thread(target=simulate, daemon=True).start()
@@ -31,16 +35,19 @@ if "sim_thread" not in st.session_state:
 
 st.title("Tautuk – Operational Resource Intelligence (POC)")
 
-latest = st.session_state.data.iloc[-1:] if len(st.session_state.data) else None
 cols = st.columns(4)
-if latest is not None:
-    cols[0].metric("CO₂ (ppm)", f"{latest.co2.iat[0]:.0f}")
-    cols[1].metric("Temp (°C)", f"{latest.temp.iat[0]:.1f}")
-    cols[2].metric("Humidity (%)", f"{latest.rh.iat[0]:.0f}")
-    cols[3].metric("PM2.5 (µg/m³)", f"{latest.pm.iat[0]:.1f}")
+if len(st.session_state.data):
+    latest = st.session_state.data.iloc[-1]
+    cols[0].metric("CO₂ (ppm)", f"{latest.co2:.0f}")
+    cols[1].metric("Temp (°C)", f"{latest.temp:.1f}")
+    cols[2].metric("Humidity (%)", f"{latest.rh:.0f}")
+    cols[3].metric("PM2.5 (µg/m³)", f"{latest.pm:.1f}")
 
-    if latest.co2.iat[0] > 1000:
-        st.error(f"⚠️ High CO₂ in {latest.room.iat[0]} — {latest.co2.iat[0]:.0f} ppm!")
+    if latest.co2 > 1000:
+        st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
+else:
+    for c in cols:
+        c.metric("Waiting …", "—")
 
 with st.expander("24-hour trends"):
     chart = st.session_state.data.tail(1440)  # last day @1/min
