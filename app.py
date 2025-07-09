@@ -207,6 +207,9 @@ st_autorefresh(interval=REFRESH_MS, key="auto")
 # Tabs for main content
 main_tab, floor_tab, trends_tab, roi_tab, report_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends", "ROI & Cost", "Reporting"])
 
+# Add Tautuk logo to the top of the sidebar
+st.sidebar.image("assets/logo.png", use_container_width=True)
+
 # Add Tautuk value proposition to sidebar
 st.sidebar.markdown("""
 <style>
@@ -229,10 +232,9 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 with main_tab:
-    # Logo header with spacing and no white background
+    # Main content header (no logo)
     header = st.container()
     hcol1, hcol2 = header.columns([1,5])
-    hcol1.image("assets/logo.png", use_container_width=True)
     hcol2.markdown("## Tautuk – Operational Resource Intelligence (POC)")
     hcol2.markdown(device_health_bar(st.session_state.get("device_last_seen",{})), unsafe_allow_html=True)
     st.markdown("<div style='margin-bottom: 2rem;'></div>", unsafe_allow_html=True)
