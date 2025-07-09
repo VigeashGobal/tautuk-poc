@@ -261,36 +261,31 @@ with main_tab:
         color = STATUS_COLORS[badge]
         st.markdown(f"<span class=\"badge\" style=\"background:{color};color:#fff;\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#F5F6FA\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
 
-        left,right = st.columns([2,1])
-        with left:
-            st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
-            for m,label,unit in [
-              ("co2","CO₂","ppm"),
-              ("temp","Temp","°C"),
-              ("rh","Humidity","%"),
-              ("pm","PM2.5","µg/m³")]:
-                state = status_color(m, latest[m])
-                bar  = STATUS_COLORS[state]
-                val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
-                st.markdown(
-                    f"""
-                    <div class='metric-card' style='color:#fff;'>
-                      <div class='metric-border' style='background:{bar}'></div>
-                      <div class='metric-label' style='color:#fff;'>{label}</div>
-                      <div class='metric-value' style='color:#fff;'>{val} <span class='metric-unit' style='color:#fff;'>{unit}</span></div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+        # Use a single column for widgets to avoid blank left column
+        st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
+        for m,label,unit in [
+          ("co2","CO₂","ppm"),
+          ("temp","Temp","°C"),
+          ("rh","Humidity","%"),
+          ("pm","PM2.5","µg/m³")]:
+            state = status_color(m, latest[m])
+            bar  = STATUS_COLORS[state]
+            val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
+            st.markdown(
+                f"""
+                <div class='metric-card' style='color:#fff;'>
+                  <div class='metric-border' style='background:{bar}'></div>
+                  <div class='metric-label' style='color:#fff;'>{label}</div>
+                  <div class='metric-value' style='color:#fff;'>{val} <span class='metric-unit' style='color:#fff;'>{unit}</span></div>
+                </div>
+                """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        # ----- alert banner remains unchanged
-        if latest.co2 > 1000:
-            st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
-
-        with right:
-            st.markdown("### 🧠 AI Insights")
-            if st.button("🔄 Refresh insights"):
-                openai_helper._CACHE["ts"] = None
-            st.markdown(openai_helper.generate_insight(st.session_state.data))
+        # Show AI Insights panel below widgets
+        st.markdown("### 🧠 AI Insights")
+        if st.button("🔄 Refresh insights"):
+            openai_helper._CACHE["ts"] = None
+        st.markdown(openai_helper.generate_insight(st.session_state.data))
     else:
         st.warning("No data available yet. Collecting first readings...")
         st.markdown("<div class='card-grid'></div>", unsafe_allow_html=True)
