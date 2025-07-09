@@ -262,7 +262,7 @@ with main_tab:
         OUT_CO2 = 420  # ppm baseline
         co2_delta = latest.co2 - OUT_CO2
         color = STATUS_COLORS[badge]
-        st.markdown(f"<span class=\"badge\" style=\"background:{color}\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#555\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
+        st.markdown(f"<span class=\"badge\" style=\"background:{color};color:#fff;\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#F5F6FA\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
 
         container = st.container()
         left,right = container.columns([2,1])
@@ -278,10 +278,10 @@ with main_tab:
                 val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
                 st.markdown(
                     f"""
-                    <div class='metric-card'>
+                    <div class='metric-card' style='color:#fff;'>
                       <div class='metric-border' style='background:{bar}'></div>
-                      <div class='metric-label'>{label}</div>
-                      <div class='metric-value'>{val} <span class='metric-unit'>{unit}</span></div>
+                      <div class='metric-label' style='color:#F5F6FA;'>{label}</div>
+                      <div class='metric-value' style='color:#fff;'>{val} <span class='metric-unit' style='color:#F5F6FA;'>{unit}</span></div>
                     </div>
                     """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
