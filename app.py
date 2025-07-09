@@ -6,6 +6,43 @@ import base64, io, datetime as _dt
 from reportlab.pdfgen import canvas
 from bs4 import BeautifulSoup
 
+# ### --- helpers: wow section ------------------------------------
+def device_health_bar(last_seen_dict, offline_after=8):
+    """Return HTML row of dots (green good / gray offline)."""
+    now=_dt.datetime.utcnow()
+    dot=[]
+    for r in ROOMS:
+        age=(now-last_seen_dict.get(r,now)).total_seconds()
+        color="#2ecc71" if age<offline_after else "#cccccc"
+        dot.append(f"<span style='color:{color};font-size:22px;'>●</span>")
+    return " ".join(dot)
+
+def floor_svg(colormap):
+    """Read assets/floor.svg and recolor each room based on colormap."""
+    with open("assets/floor.svg") as f:
+        soup=BeautifulSoup(f.read(),"xml")
+    for rid,color in colormap.items():
+        node=soup.find(id=rid)
+        if node: node["fill"]=color
+    return soup.decode()
+
+def export_csv(df):
+    return df.to_csv(index=False).encode()
+
+def build_pdf(df, overall_status):
+    buf=io.BytesIO()
+    c=canvas.Canvas(buf,pagesize=(595,842))  # A4-ish
+    c.setFont("Helvetica-Bold",20); c.drawString(50,800,"Tautuk IAQ Weekly Report")
+    c.setFont("Helvetica",12); c.drawString(50,780,f"Generated: {_dt.datetime.utcnow():%Y-%m-%d %H:%M} UTC")
+    c.setFont("Helvetica-Bold",14); c.drawString(50,740,f"Overall status: {overall_status.upper()}")
+    y=700; c.setFont("Helvetica",11)
+    for m,label in [("co2","CO₂ ppm"),("temp","Temp °C"),("rh","Humidity %"),("pm","PM2.5 µg/m³")]:
+        c.drawString(60,y,f"{label}  avg: {df[m].mean():.1f}   max: {df[m].max():.1f}")
+        y-=20
+    c.showPage(); c.save(); buf.seek(0)
+    return buf.read()
+# ------------------------------------------------------------------
+
 # ---- custom CSS ----
 st.markdown("""
 <style>
@@ -189,40 +226,3 @@ with st.expander("24-hour trends", expanded=False):
         st.line_chart(chart, height=180)
     else:
         st.info("No data yet - chart will appear once readings are collected")
-
-# ### --- helpers: wow section ------------------------------------
-def device_health_bar(last_seen_dict, offline_after=8):
-    """Return HTML row of dots (green good / gray offline)."""
-    now=_dt.datetime.utcnow()
-    dot=[]
-    for r in ROOMS:
-        age=(now-last_seen_dict.get(r,now)).total_seconds()
-        color="#2ecc71" if age<offline_after else "#cccccc"
-        dot.append(f"<span style='color:{color};font-size:22px;'>●</span>")
-    return " ".join(dot)
-
-def floor_svg(colormap):
-    """Read assets/floor.svg and recolor each room based on colormap."""
-    with open("assets/floor.svg") as f:
-        soup=BeautifulSoup(f.read(),"xml")
-    for rid,color in colormap.items():
-        node=soup.find(id=rid)
-        if node: node["fill"]=color
-    return soup.decode()
-
-def export_csv(df):
-    return df.to_csv(index=False).encode()
-
-def build_pdf(df, overall_status):
-    buf=io.BytesIO()
-    c=canvas.Canvas(buf,pagesize=(595,842))  # A4-ish
-    c.setFont("Helvetica-Bold",20); c.drawString(50,800,"Tautuk IAQ Weekly Report")
-    c.setFont("Helvetica",12); c.drawString(50,780,f"Generated: {_dt.datetime.utcnow():%Y-%m-%d %H:%M} UTC")
-    c.setFont("Helvetica-Bold",14); c.drawString(50,740,f"Overall status: {overall_status.upper()}")
-    y=700; c.setFont("Helvetica",11)
-    for m,label in [("co2","CO₂ ppm"),("temp","Temp °C"),("rh","Humidity %"),("pm","PM2.5 µg/m³")]:
-        c.drawString(60,y,f"{label}  avg: {df[m].mean():.1f}   max: {df[m].max():.1f}")
-        y-=20
-    c.showPage(); c.save(); buf.seek(0)
-    return buf.read()
-# ------------------------------------------------------------------
