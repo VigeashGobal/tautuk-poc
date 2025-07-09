@@ -227,23 +227,10 @@ with main_tab:
     st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})), unsafe_allow_html=True)
     st.markdown("<div style='margin-bottom: 2rem;'></div>", unsafe_allow_html=True)
 
-    # Demo toggles
-    st.markdown("#### Demo Conditions")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        demo_co2 = st.checkbox("💡 Force high CO₂ demo", value=False, key="demo_co2")
-    with col2:
-        demo_pm = st.checkbox("💡 Force high PM2.5 demo", value=False, key="demo_pm")
-    with col3:
-        demo_temp = st.checkbox("💡 Force high Temp demo", value=False, key="demo_temp")
-
-    # device health row
-    st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
-
+    # --- main air quality widgets/cards ---
     if not st.session_state.data.empty:
         latest = st.session_state.data.iloc[-1]
         badge = overall_iaq_status(latest)
-        # Outdoor reference
         OUT_CO2 = 420  # ppm baseline
         co2_delta = latest.co2 - OUT_CO2
         color = STATUS_COLORS[badge]
@@ -283,6 +270,16 @@ with main_tab:
     else:
         st.warning("No data available yet. Collecting first readings...")
         st.markdown("<div class='card-grid'></div>", unsafe_allow_html=True)
+
+    # --- Demo toggles now appear below widgets ---
+    st.markdown("#### Demo Conditions")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        demo_co2 = st.checkbox("💡 Force high CO₂ demo", value=False, key="demo_co2")
+    with col2:
+        demo_pm = st.checkbox("💡 Force high PM2.5 demo", value=False, key="demo_pm")
+    with col3:
+        demo_temp = st.checkbox("💡 Force high Temp demo", value=False, key="demo_temp")
 
 with floor_tab:
     st.markdown("### Device Health")
