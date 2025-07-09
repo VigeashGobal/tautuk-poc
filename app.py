@@ -140,11 +140,6 @@ init_state()
 # auto-refresh (returns a counter we could use if needed)
 st_autorefresh(interval=REFRESH_MS, key="auto")
 
-st.sidebar.markdown("### Why it matters")
-st.sidebar.write("- Boost productivity by preventing stale air")
-st.sidebar.write("- Cut HVAC energy with demand-based ventilation")
-st.sidebar.write("- Auto-document IAQ compliance")
-
 st.title("Tautuk – Operational Resource Intelligence (POC)")
 
 # Tabs for main content
