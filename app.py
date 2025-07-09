@@ -171,7 +171,7 @@ if len(st.session_state.data) > 1440:
 st.title("Tautuk – Operational Resource Intelligence (POC)")
 
 # Tabs for main content
-main_tab, floor_tab = st.tabs(["Diagnostics & Insights", "Floor Map"])
+main_tab, floor_tab, trends_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends"])
 
 with main_tab:
     # device health row
@@ -218,14 +218,6 @@ with main_tab:
             openai_helper._CACHE["ts"] = None
         st.markdown(openai_helper.generate_insight(st.session_state.data))
 
-    # --- chart and extras below ---
-    with st.expander("24-hour trends", expanded=False):
-        if len(st.session_state.data) > 0:
-            chart = st.session_state.data.set_index("ts")[METRICS]
-            st.line_chart(chart, height=180)
-        else:
-            st.info("No data yet - chart will appear once readings are collected")
-
 with floor_tab:
     st.markdown("### Device Health")
     st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
@@ -233,3 +225,12 @@ with floor_tab:
     room_colors={r: STATUS_COLORS[status_color("co2", latest.co2)] for r in ROOMS}
     svg= floor_svg(room_colors)
     st.image(svg, use_container_width=True)
+
+with trends_tab:
+    st.markdown("### 24-hour Trends")
+    with st.expander("Show chart", expanded=True):
+        if len(st.session_state.data) > 0:
+            chart = st.session_state.data.set_index("ts")[METRICS]
+            st.line_chart(chart, height=180)
+        else:
+            st.info("No data yet - chart will appear once readings are collected")
