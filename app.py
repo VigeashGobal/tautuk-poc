@@ -198,7 +198,7 @@ def generate_reading(force_high_co2=False, force_high_pm=False, force_high_temp=
     return {"ts": datetime.datetime.utcnow(), "room": random.choice(ROOMS), **nxt}
 
 # ---------- page setup ----------
-st.set_page_config(page_title="Tautuk POC", layout="wide")
+st.set_page_config(page_title="Tautuk POC", page_icon="assets/logo.png", layout="wide")
 init_state()
 
 # auto-refresh (returns a counter we could use if needed)
@@ -208,6 +208,13 @@ st_autorefresh(interval=REFRESH_MS, key="auto")
 main_tab, floor_tab, trends_tab, roi_tab, report_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends", "ROI & Cost", "Reporting"])
 
 with main_tab:
+    # Logo header
+    header = st.container()
+    hcol1, hcol2 = header.columns([1,5])
+    hcol1.image("assets/logo.png", use_column_width=True)
+    hcol2.markdown("## Tautuk – Operational Resource Intelligence (POC)")
+    hcol2.markdown(device_health_bar(st.session_state.get("device_last_seen",{})), unsafe_allow_html=True)
+
     # Demo-ready intro section
     st.markdown("""
     ### Transforming Data Into Actionable Insights
