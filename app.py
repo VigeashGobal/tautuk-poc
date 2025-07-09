@@ -208,6 +208,19 @@ st_autorefresh(interval=REFRESH_MS, key="auto")
 main_tab, floor_tab, trends_tab, roi_tab, report_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends", "ROI & Cost", "Reporting"])
 
 with main_tab:
+    # Demo-ready intro section
+    st.markdown("""
+    ### Transforming Data Into Actionable Insights
+    In today's world, organizations are flooded with data, making it hard to focus on what truly matters. **Tautuk™** cuts through the noise with advanced sensors and analytics, delivering the crucial insights you need to optimize operations, improve productivity, and drive performance.
+
+    **Our platform empowers you to:**
+    - Minimize downtime and cut operational costs
+    - Predict maintenance needs and prevent breakdowns
+    - Optimize energy use and reduce emissions
+    - Enhance equipment health and extend asset life
+    - Streamline operations with real-time, actionable intelligence
+    """)
+
     # Demo toggles
     st.markdown("#### Demo Conditions")
     col1, col2, col3 = st.columns(3)
