@@ -106,7 +106,6 @@ h2, h3, h4 { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-weigh
 st.markdown(
     f"""
     <div class='sticky-header'>
-        <img src='assets/tautuk_logo.png' alt='Tautuk logo'>
         <span class='app-title'>Tautuk – Operational Resource Intelligence (POC)</span>
     </div>
     """,
