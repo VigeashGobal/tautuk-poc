@@ -6,3 +6,4 @@ plotly
 openai
 reportlab
 beautifulsoup4
+lxml
