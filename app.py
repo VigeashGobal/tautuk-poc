@@ -198,7 +198,7 @@ def generate_reading(force_high_co2=False, force_high_pm=False, force_high_temp=
     return {"ts": datetime.datetime.utcnow(), "room": random.choice(ROOMS), **nxt}
 
 # ---------- page setup ----------
-st.set_page_config(page_title="Tautuk POC", page_icon="assets/logo.png", layout="wide")
+st.set_page_config(page_title="Tautuk POC", page_icon="assets/logo.png", layout="wide", initial_sidebar_state="expanded", theme={"base": "dark", "primaryColor": "#0E6BA8", "backgroundColor": "#18191A", "secondaryBackgroundColor": "#23272F", "textColor": "#F5F6FA", "font": "sans serif"})
 init_state()
 
 # auto-refresh (returns a counter we could use if needed)
@@ -209,24 +209,38 @@ main_tab, floor_tab, trends_tab, roi_tab, report_tab = st.tabs(["Diagnostics & I
 
 # Add Tautuk value proposition to sidebar
 st.sidebar.markdown("""
-### Transforming Data Into Actionable Insights
-In today's world, organizations are flooded with data, making it hard to focus on what truly matters. **Tautuk™** cuts through the noise with advanced sensors and analytics, delivering the crucial insights you need to optimize operations, improve productivity, and drive performance.
-
-**Our platform empowers you to:**
-- Minimize downtime and cut operational costs
-- Predict maintenance needs and prevent breakdowns
-- Optimize energy use and reduce emissions
-- Enhance equipment health and extend asset life
-- Streamline operations with real-time, actionable intelligence
-""")
+<style>
+    .sidebar-content { color: #F5F6FA; }
+</style>
+""", unsafe_allow_html=True)
+st.sidebar.markdown("""
+<div class='sidebar-content'>
+<h3>Transforming Data Into Actionable Insights</h3>
+<p>In today's world, organizations are flooded with data, making it hard to focus on what truly matters. <b>Tautuk™</b> cuts through the noise with advanced sensors and analytics, delivering the crucial insights you need to optimize operations, improve productivity, and drive performance.</p>
+<b>Our platform empowers you to:</b>
+<ul>
+<li>Minimize downtime and cut operational costs</li>
+<li>Predict maintenance needs and prevent breakdowns</li>
+<li>Optimize energy use and reduce emissions</li>
+<li>Enhance equipment health and extend asset life</li>
+<li>Streamline operations with real-time, actionable intelligence</li>
+</ul>
+</div>
+""", unsafe_allow_html=True)
 
 with main_tab:
-    # Logo header
+    # Logo header with spacing and logo highlight
     header = st.container()
     hcol1, hcol2 = header.columns([1,5])
-    hcol1.image("assets/logo.png", use_column_width=True)
+    with hcol1:
+        st.markdown("""
+        <div style='background: #fff; border-radius: 12px; padding: 0.5rem; display: flex; align-items: center; justify-content: center;'>
+        """, unsafe_allow_html=True)
+        st.image("assets/logo.png", use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     hcol2.markdown("## Tautuk – Operational Resource Intelligence (POC)")
     hcol2.markdown(device_health_bar(st.session_state.get("device_last_seen",{})), unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 2rem;'></div>", unsafe_allow_html=True)
 
     # Demo toggles
     st.markdown("#### Demo Conditions")
