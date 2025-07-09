@@ -139,15 +139,6 @@ st.sidebar.write("- Boost productivity by preventing stale air")
 st.sidebar.write("- Cut HVAC energy with demand-based ventilation")
 st.sidebar.write("- Auto-document IAQ compliance")
 
-# Export buttons
-st.sidebar.markdown("---")
-if st.sidebar.button("⬇️ 24h CSV"):
-    st.download_button("Download", export_csv(st.session_state.data),"tauk_24h.csv",mime="text/csv",key="csv")
-
-if st.sidebar.button("⬇️ 1-week PDF report"):
-    pdf_bytes=build_pdf(st.session_state.data, badge.upper())
-    st.download_button("Download", pdf_bytes,"tauk_report.pdf",mime="application/pdf",key="pdf")
-
 demo_toggle = st.sidebar.checkbox("💡 Force high CO₂ demo", value=False)
 
 # --------- create a new reading each run ---------
@@ -164,7 +155,7 @@ if len(st.session_state.data) > 1440:
 st.title("Tautuk – Operational Resource Intelligence (POC)")
 
 # Tabs for main content
-main_tab, floor_tab, trends_tab, roi_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends", "ROI & Cost"])
+main_tab, floor_tab, trends_tab, roi_tab, report_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends", "ROI & Cost", "Reporting"])
 
 with main_tab:
     # device health row
@@ -234,3 +225,12 @@ with roi_tab:
     rate = st.number_input("Electricity rate  ( ¢ /kWh )",0.05,0.5,0.12)
     annual_save = occ*0.12*rate*240   # rough formula
     st.metric("Est. yearly savings", f"$ {annual_save:,.0f}")
+
+with report_tab:
+    st.markdown("### Download Reports")
+    if st.button("⬇️ 24h CSV"):
+        st.download_button("Download 24h CSV", export_csv(st.session_state.data),"tauk_24h.csv",mime="text/csv",key="csv")
+    if st.button("⬇️ 1-week PDF report"):
+        badge = overall_iaq_status(latest)
+        pdf_bytes=build_pdf(st.session_state.data, badge.upper())
+        st.download_button("Download 1-week PDF", pdf_bytes,"tauk_report.pdf",mime="application/pdf",key="pdf")
