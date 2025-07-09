@@ -263,24 +263,27 @@ with main_tab:
 
         left, right = st.columns([2, 1])
         with left:
-            st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
-            for m,label,unit in [
-              ("co2","CO₂","ppm"),
-              ("temp","Temp","°C"),
-              ("rh","Humidity","%"),
-              ("pm","PM2.5","µg/m³")]:
-                state = status_color(m, latest[m])
-                bar  = STATUS_COLORS[state]
-                val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
-                st.markdown(
-                    f"""
-                    <div class='metric-card' style='color:#fff;'>
-                      <div class='metric-border' style='background:{bar}'></div>
-                      <div class='metric-label' style='color:#fff;'>{label}</div>
-                      <div class='metric-value' style='color:#fff;'>{val} <span class='metric-unit' style='color:#fff;'>{unit}</span></div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Arrange widgets in a 2-column grid
+            metrics = [
+                ("co2","CO₂","ppm"),
+                ("temp","Temp","°C"),
+                ("rh","Humidity","%"),
+                ("pm","PM2.5","µg/m³")
+            ]
+            cols = st.columns(2)
+            for i, (m, label, unit) in enumerate(metrics):
+                with cols[i % 2]:
+                    state = status_color(m, latest[m])
+                    bar  = STATUS_COLORS[state]
+                    val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
+                    st.markdown(
+                        f"""
+                        <div class='metric-card' style='color:#fff;'>
+                          <div class='metric-border' style='background:{bar}'></div>
+                          <div class='metric-label' style='color:#fff;'>{label}</div>
+                          <div class='metric-value' style='color:#fff;'>{val} <span class='metric-unit' style='color:#fff;'>{unit}</span></div>
+                        </div>
+                        """, unsafe_allow_html=True)
         with right:
             st.markdown("### 🧠 AI Insights")
             if st.button("🔄 Refresh insights"):
