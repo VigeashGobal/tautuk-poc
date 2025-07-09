@@ -2,6 +2,33 @@ import streamlit as st, pandas as pd, numpy as np, time, datetime, random
 from streamlit_autorefresh import st_autorefresh
 import openai_helper
 
+# ---- custom CSS ----
+st.markdown("""
+<style>
+/* global tweaks */
+section.main > div {padding-top: 1rem;}  /* tighter spacing */
+/* metric tiles glass effect */
+[data-testid="stMetric"] {
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  padding: 1.2rem 0.8rem;
+}
+/* buttons */
+button[kind="secondary"] {
+  border-radius: 8px;
+  padding: 0.4rem 0.9rem;
+}
+/* sidebar list bullets → nice checkmarks */
+.sidebar-content ul li::marker {
+  color: #0E6BA8;
+  content: "✓ ";
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ---------- config ----------
 ROOMS   = ["Office A", "Office B", "Lab"]
 METRICS = ["co2", "temp", "rh", "pm"]
