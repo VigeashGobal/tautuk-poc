@@ -57,8 +57,11 @@ if latest.co2 > 1000:
     st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
 
 with st.expander("24-hour trends", expanded=False):
-    chart = st.session_state.data.set_index("ts")[METRICS]
-    st.line_chart(chart)
+    if len(st.session_state.data) > 0:
+        chart = st.session_state.data.set_index("ts")[METRICS]
+        st.line_chart(chart)
+    else:
+        st.info("No data yet - chart will appear once readings are collected")
 
 # --- AI insight panel ---
 st.markdown("### 🧠 AI-Generated Insights (updates every 5 min)")
