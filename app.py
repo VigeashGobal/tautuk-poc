@@ -74,7 +74,8 @@ body, html { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
 }
 
 /* Tabs */
-[data-baseweb="tab-list"] { font-size: 1.13rem; font-weight: 600; }
+[data-baseweb="tab-list"] { font-size: 1.35rem !important; font-weight: 700 !important; }
+[data-baseweb="tab"] { font-size: 1.18rem !important; font-weight: 700 !important; }
 [data-baseweb="tab"]:hover { color: #7B3FE4; }
 [data-baseweb="tab"]:active { color: #F5B700; }
 
