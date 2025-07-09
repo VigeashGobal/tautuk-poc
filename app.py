@@ -169,60 +169,67 @@ if len(st.session_state.data) > 1440:
     st.session_state.data = st.session_state.data.iloc[-1440:]
 
 st.title("Tautuk – Operational Resource Intelligence (POC)")
-# device health row
-st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
 
-latest = st.session_state.data.iloc[-1]
+# Tabs for main content
+main_tab, floor_tab = st.tabs(["Diagnostics & Insights", "Floor Map"])
 
-badge = overall_iaq_status(latest)
-# Outdoor reference
-OUT_CO2 = 420  # ppm baseline
-co2_delta = latest.co2 - OUT_CO2
-color = STATUS_COLORS[badge]
-st.markdown(f"<span class=\"badge\" style=\"background:{color}\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#555\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
+with main_tab:
+    # device health row
+    st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
 
-container = st.container()
-left,right = container.columns([2,1])
-with left:
-    st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
-    for m,label,unit in [
-      ("co2","CO₂","ppm"),
-      ("temp","Temp","°C"),
-      ("rh","Humidity","%"),
-      ("pm","PM2.5","µg/m³")]:
-        state = status_color(m, latest[m])
-        bar  = STATUS_COLORS[state]
-        val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
-        st.markdown(
-            f"""
-            <div class='metric-card'>
-              <div class='metric-border' style='background:{bar}'></div>
-              <div class='metric-label'>{label}</div>
-              <div class='metric-value'>{val} <span class='metric-unit'>{unit}</span></div>
-            </div>
-            """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    latest = st.session_state.data.iloc[-1]
 
-# floorplan
-room_colors={r: STATUS_COLORS[status_color("co2", latest.co2)] for r in ROOMS}
-svg= floor_svg(room_colors)
-left.image(svg, use_container_width=True)
+    badge = overall_iaq_status(latest)
+    # Outdoor reference
+    OUT_CO2 = 420  # ppm baseline
+    co2_delta = latest.co2 - OUT_CO2
+    color = STATUS_COLORS[badge]
+    st.markdown(f"<span class=\"badge\" style=\"background:{color}\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#555\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
 
-# ----- alert banner remains unchanged
-if latest.co2 > 1000:
-    st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
+    container = st.container()
+    left,right = container.columns([2,1])
+    with left:
+        st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
+        for m,label,unit in [
+          ("co2","CO₂","ppm"),
+          ("temp","Temp","°C"),
+          ("rh","Humidity","%"),
+          ("pm","PM2.5","µg/m³")]:
+            state = status_color(m, latest[m])
+            bar  = STATUS_COLORS[state]
+            val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                  <div class='metric-border' style='background:{bar}'></div>
+                  <div class='metric-label'>{label}</div>
+                  <div class='metric-value'>{val} <span class='metric-unit'>{unit}</span></div>
+                </div>
+                """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-with right:
-    st.markdown("### 🧠 AI Insights")
-    if st.button("🔄 Refresh insights"):
-        openai_helper._CACHE["ts"] = None
-    st.markdown(openai_helper.generate_insight(st.session_state.data))
+    # ----- alert banner remains unchanged
+    if latest.co2 > 1000:
+        st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
 
-# --- chart and extras below ---
+    with right:
+        st.markdown("### 🧠 AI Insights")
+        if st.button("🔄 Refresh insights"):
+            openai_helper._CACHE["ts"] = None
+        st.markdown(openai_helper.generate_insight(st.session_state.data))
 
-with st.expander("24-hour trends", expanded=False):
-    if len(st.session_state.data) > 0:
-        chart = st.session_state.data.set_index("ts")[METRICS]
-        st.line_chart(chart, height=180)
-    else:
-        st.info("No data yet - chart will appear once readings are collected")
+    # --- chart and extras below ---
+    with st.expander("24-hour trends", expanded=False):
+        if len(st.session_state.data) > 0:
+            chart = st.session_state.data.set_index("ts")[METRICS]
+            st.line_chart(chart, height=180)
+        else:
+            st.info("No data yet - chart will appear once readings are collected")
+
+with floor_tab:
+    st.markdown("### Device Health")
+    st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
+    st.markdown("### Floor Map")
+    room_colors={r: STATUS_COLORS[status_color("co2", latest.co2)] for r in ROOMS}
+    svg= floor_svg(room_colors)
+    st.image(svg, use_container_width=True)
