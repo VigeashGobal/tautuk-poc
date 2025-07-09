@@ -55,22 +55,36 @@ def init_state():
         st.session_state.data = pd.DataFrame(columns=["ts", "room", *METRICS])
 
 def generate_reading(force_high_co2=False):
-    """AR(1)-style drift so values change smoothly"""
-    base = st.session_state.get("last_reading", {
-        "co2":650, "temp":23, "rh":50, "pm":10
-    })
-    nxt = {
-        "co2": (0.9*base["co2"] + np.random.normal(0,15)) if not force_high_co2 else 1200,
-        "temp": (0.9*base["temp"] + np.random.normal(0,0.3)),
-        "rh"  : (0.9*base["rh"]  + np.random.normal(0,1.0)),
-        "pm"  : max(0, 0.8*base["pm"] + np.random.normal(0,1))
-    }
+    """
+    Mean-reverting random walk:
+    - keeps metrics inside "good" band (± small wiggle)
+    - big spike only when force_high_co2=True
+    """
+    TARGET = dict(co2=650, temp=23, rh=50, pm=8)   # comfortable mid-points
+    SD     = dict(co2=8,   temp=0.25, rh=0.8, pm=0.8)  # noise stdev
+    LIMITS = dict(        # clamp to keep status mostly GOOD
+        co2=(500, 800),
+        temp=(20, 25),
+        rh=(35, 60),
+        pm=(4, 20),
+    )
+
+    base = st.session_state.get("last_reading", TARGET)
+    nxt = {}
+
+    for k in TARGET:
+        if k == "co2" and force_high_co2:
+            nxt[k] = 1200  # trigger alert on cue
+            continue
+        # mean-reversion towards TARGET + small noise
+        drift = 0.12 * (TARGET[k] - base[k])
+        nxt[k] = base[k] + drift + np.random.normal(0, SD[k])
+        # clamp within limits
+        low, high = LIMITS[k]
+        nxt[k] = max(low, min(high, nxt[k]))
+
     st.session_state.last_reading = nxt
-    return {
-        "ts": datetime.datetime.utcnow(),
-        "room": random.choice(ROOMS),
-        **nxt,
-    }
+    return {"ts": datetime.datetime.utcnow(), "room": random.choice(ROOMS), **nxt}
 
 # ---------- page setup ----------
 st.set_page_config(page_title="Tautuk POC", layout="wide")
