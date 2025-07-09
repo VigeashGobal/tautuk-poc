@@ -262,8 +262,7 @@ with main_tab:
         color = STATUS_COLORS[badge]
         st.markdown(f"<span class=\"badge\" style=\"background:{color};color:#fff;\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#F5F6FA\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
 
-        container = st.container()
-        left,right = container.columns([2,1])
+        left,right = st.columns([2,1])
         with left:
             st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
             for m,label,unit in [
