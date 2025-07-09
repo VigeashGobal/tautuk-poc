@@ -206,7 +206,7 @@ with left:
 # floorplan
 room_colors={r: STATUS_COLORS[status_color("co2", latest.co2)] for r in ROOMS}
 svg= floor_svg(room_colors)
-left.image(svg, use_column_width=True)
+left.image(svg, use_container_width=True)
 
 # ----- alert banner remains unchanged
 if latest.co2 > 1000:
