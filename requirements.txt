@@ -1,5 +1,6 @@
 streamlit>=1.36
-pandas
+streamlit-autorefreshpandas
 numpy
 plotly
+streamlit-autorefresh
 streamlit-autorefresh
