@@ -232,10 +232,8 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 with main_tab:
-    # Remove main content header (no logo, no title)
-    # ... existing code ...
-    # device health row can remain if needed
-    hcol2.markdown(device_health_bar(st.session_state.get("device_last_seen",{})), unsafe_allow_html=True)
+    # No header, just show device health row at the top
+    st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})), unsafe_allow_html=True)
     st.markdown("<div style='margin-bottom: 2rem;'></div>", unsafe_allow_html=True)
 
     # Demo toggles
