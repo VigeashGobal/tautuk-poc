@@ -276,10 +276,10 @@ with main_tab:
                 val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
                 st.markdown(
                     f"""
-                    <div class='metric-card' style='color:#111;'>
+                    <div class='metric-card' style='color:#fff;'>
                       <div class='metric-border' style='background:{bar}'></div>
-                      <div class='metric-label' style='color:#222;'>{label}</div>
-                      <div class='metric-value' style='color:#111;'>{val} <span class='metric-unit' style='color:#333;'>{unit}</span></div>
+                      <div class='metric-label' style='color:#fff;'>{label}</div>
+                      <div class='metric-value' style='color:#fff;'>{val} <span class='metric-unit' style='color:#fff;'>{unit}</span></div>
                     </div>
                     """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
