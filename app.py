@@ -46,22 +46,72 @@ def build_pdf(df, overall_status):
 # ---- custom CSS ----
 st.markdown("""
 <style>
-body::before{content:"";position:fixed;inset:0;background:linear-gradient(120deg,#dff1ff 0%,#f6fbff 50%,#eef7ff 100%);animation:bg 24s infinite ease-in-out alternate;z-index:-1}@keyframes bg{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(15deg)}}
-html,body{overflow-x:hidden;} section.main>div{padding-top:.3rem;padding-bottom:.3rem;}
-h1{font-size:2.1rem;margin:0.4rem 0 0.8rem;} .card-grid{margin:0.6rem 0;gap:0.9rem;}
-.badge{margin-top:0.3rem;}
-/* Card grid */
-.card-grid {display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 1.25rem; margin: 1.2rem 0;}
-.metric-card {background: var(--secondary-background-color); border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.04); padding: 1.1rem 1rem; text-align: center; transition: transform .15s;}
-.metric-card:hover {transform: translateY(-2px);}
-.metric-label {font-size: 0.82rem; color: #5e5e5e; letter-spacing: 0.2px; margin-bottom: 4px;}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+body, html { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important; }
+
+/* Sticky header */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #f5f7fa;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  display: flex;
+  align-items: center;
+  padding: 0.7rem 1.5rem 0.7rem 1.2rem;
+  margin-bottom: 1.2rem;
+}
+.sticky-header img {
+  height: 38px;
+  margin-right: 1.1rem;
+}
+.sticky-header .app-title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #0E6BA8;
+  margin-bottom: 0;
+}
+
+/* Tabs */
+[data-baseweb="tab-list"] { font-size: 1.13rem; font-weight: 600; }
+[data-baseweb="tab"]:hover { color: #7B3FE4; }
+[data-baseweb="tab"]:active { color: #F5B700; }
+
+/* Card grid and metrics */
+.card-grid {margin:0.6rem 0;gap:0.9rem;}
+.metric-card {background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.04); border: 1.5px solid #e6e6f0; padding: 1.1rem 1rem; text-align: center; transition: box-shadow .15s, border .15s;}
+.metric-card:hover {box-shadow: 0 8px 32px rgba(123,63,228,0.10); border: 1.5px solid #7B3FE4;}
+.metric-label {font-size: 0.85rem; color: #5e5e5e; letter-spacing: 0.2px; margin-bottom: 4px;}
 .metric-value {font-size: 2.2rem; font-weight: 600; margin-bottom: 0;}
 .metric-unit {font-size: 0.80rem; color: #7a7a7a;}
 .metric-border {height: 4px; width: 100%; border-radius: 4px 4px 0 0; margin: -1.1rem -1rem 0.9rem;}
+
 /* Status badge */
-.badge {display: inline-block; padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; color:#fff;}
+.badge {display: inline-block; padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; color:#fff; background: linear-gradient(90deg,#0E6BA8,#7B3FE4,#F5B700);}
+
+/* Demo toggles */
+.demo-toggle label {font-weight: 600; color: #7B3FE4;}
+.demo-toggle .stCheckbox>div {border-radius: 999px; border: 2px solid #F5B700;}
+
+/* Section headers */
+h2, h3, h4 { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-weight: 700; color: #0E6BA8; }
+
+/* Footer */
+.footer {margin-top: 2.5rem; text-align: center; color: #888; font-size: 0.98rem;}
 </style>
 """, unsafe_allow_html=True)
+
+# Sticky header with logo and title
+st.markdown(
+    f"""
+    <div class='sticky-header'>
+        <img src='assets/tautuk_logo.png' alt='Tautuk logo'>
+        <span class='app-title'>Tautuk – Operational Resource Intelligence (POC)</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # ---------- helpers ----------
 STATUS_COLORS = OrderedDict([
@@ -94,6 +144,21 @@ REFRESH_MS = 2000   # 2 s
 def init_state():
     if "data" not in st.session_state:
         st.session_state.data = pd.DataFrame(columns=["ts", "room", *METRICS])
+
+    # --------- create a new reading each run ---------
+    # simulate 1% chance a sensor skips
+    row=generate_reading(
+        force_high_co2=st.session_state.get("demo_co2", False),
+        force_high_pm=st.session_state.get("demo_pm", False),
+        force_high_temp=st.session_state.get("demo_temp", False)
+    )
+    if random.random()>0.01: st.session_state.data.loc[len(st.session_state.data)] = row
+    # update last-seen dict
+    lst=st.session_state.setdefault("device_last_seen",{}); lst[row["room"]]=_dt.datetime.utcnow()
+
+    # keep last 1440 rows (~24 h @1 min) to limit memory
+    if len(st.session_state.data) > 1440:
+        st.session_state.data = st.session_state.data.iloc[-1440:]
 
 def generate_reading(force_high_co2=False, force_high_pm=False, force_high_temp=False):
     """
@@ -159,54 +224,61 @@ with main_tab:
     # device health row
     st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
 
-    latest = st.session_state.data.iloc[-1]
+    if not st.session_state.data.empty:
+        latest = st.session_state.data.iloc[-1]
+        badge = overall_iaq_status(latest)
+        # Outdoor reference
+        OUT_CO2 = 420  # ppm baseline
+        co2_delta = latest.co2 - OUT_CO2
+        color = STATUS_COLORS[badge]
+        st.markdown(f"<span class=\"badge\" style=\"background:{color}\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#555\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
 
-    badge = overall_iaq_status(latest)
-    # Outdoor reference
-    OUT_CO2 = 420  # ppm baseline
-    co2_delta = latest.co2 - OUT_CO2
-    color = STATUS_COLORS[badge]
-    st.markdown(f"<span class=\"badge\" style=\"background:{color}\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#555\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
+        container = st.container()
+        left,right = container.columns([2,1])
+        with left:
+            st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
+            for m,label,unit in [
+              ("co2","CO₂","ppm"),
+              ("temp","Temp","°C"),
+              ("rh","Humidity","%"),
+              ("pm","PM2.5","µg/m³")]:
+                state = status_color(m, latest[m])
+                bar  = STATUS_COLORS[state]
+                val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
+                st.markdown(
+                    f"""
+                    <div class='metric-card'>
+                      <div class='metric-border' style='background:{bar}'></div>
+                      <div class='metric-label'>{label}</div>
+                      <div class='metric-value'>{val} <span class='metric-unit'>{unit}</span></div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-    container = st.container()
-    left,right = container.columns([2,1])
-    with left:
-        st.markdown("<div class=\"card-grid\">", unsafe_allow_html=True)
-        for m,label,unit in [
-          ("co2","CO₂","ppm"),
-          ("temp","Temp","°C"),
-          ("rh","Humidity","%"),
-          ("pm","PM2.5","µg/m³")]:
-            state = status_color(m, latest[m])
-            bar  = STATUS_COLORS[state]
-            val  = f"{latest[m]:.1f}" if m!="co2" else f"{latest[m]:.0f}"
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                  <div class='metric-border' style='background:{bar}'></div>
-                  <div class='metric-label'>{label}</div>
-                  <div class='metric-value'>{val} <span class='metric-unit'>{unit}</span></div>
-                </div>
-                """, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        # ----- alert banner remains unchanged
+        if latest.co2 > 1000:
+            st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
 
-    # ----- alert banner remains unchanged
-    if latest.co2 > 1000:
-        st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
-
-    with right:
-        st.markdown("### 🧠 AI Insights")
-        if st.button("🔄 Refresh insights"):
-            openai_helper._CACHE["ts"] = None
-        st.markdown(openai_helper.generate_insight(st.session_state.data))
+        with right:
+            st.markdown("### 🧠 AI Insights")
+            if st.button("🔄 Refresh insights"):
+                openai_helper._CACHE["ts"] = None
+            st.markdown(openai_helper.generate_insight(st.session_state.data))
+    else:
+        st.warning("No data available yet. Collecting first readings...")
+        st.markdown("<div class='card-grid'></div>", unsafe_allow_html=True)
 
 with floor_tab:
     st.markdown("### Device Health")
     st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
     st.markdown("### Floor Map")
-    room_colors={r: STATUS_COLORS[status_color("co2", latest.co2)] for r in ROOMS}
-    svg= floor_svg(room_colors)
-    st.image(svg, use_container_width=True)
+    if not st.session_state.data.empty:
+        latest = st.session_state.data.iloc[-1]
+        room_colors={r: STATUS_COLORS[status_color("co2", latest.co2)] for r in ROOMS}
+        svg= floor_svg(room_colors)
+        st.image(svg, use_container_width=True)
+    else:
+        st.info("No data available for floor map yet.")
 
 with trends_tab:
     st.markdown("### 24-hour Trends")
@@ -226,24 +298,12 @@ with roi_tab:
 
 with report_tab:
     st.markdown("### Download Reports")
-    if st.button("⬇️ 24h CSV"):
-        st.download_button("Download 24h CSV", export_csv(st.session_state.data),"tauk_24h.csv",mime="text/csv",key="csv")
-    if st.button("⬇️ 1-week PDF report"):
-        badge = overall_iaq_status(latest)
-        pdf_bytes=build_pdf(st.session_state.data, badge.upper())
-        st.download_button("Download 1-week PDF", pdf_bytes,"tauk_report.pdf",mime="application/pdf",key="pdf")
-
-# --------- create a new reading each run ---------
-# simulate 1% chance a sensor skips
-row=generate_reading(
-    force_high_co2=st.session_state.get("demo_co2", False),
-    force_high_pm=st.session_state.get("demo_pm", False),
-    force_high_temp=st.session_state.get("demo_temp", False)
-)
-if random.random()>0.01: st.session_state.data.loc[len(st.session_state.data)] = row
-# update last-seen dict
-lst=st.session_state.setdefault("device_last_seen",{}); lst[row["room"]]=_dt.datetime.utcnow()
-
-# keep last 1440 rows (~24 h @1 min) to limit memory
-if len(st.session_state.data) > 1440:
-    st.session_state.data = st.session_state.data.iloc[-1440:]
+    if not st.session_state.data.empty:
+        if st.button("⬇️ 24h CSV"):
+            st.download_button("Download 24h CSV", export_csv(st.session_state.data),"tauk_24h.csv",mime="text/csv",key="csv")
+        if st.button("⬇️ 1-week PDF report"):
+            badge = overall_iaq_status(st.session_state.data.iloc[-1])
+            pdf_bytes=build_pdf(st.session_state.data, badge.upper())
+            st.download_button("Download 1-week PDF", pdf_bytes,"tauk_report.pdf",mime="application/pdf",key="pdf")
+    else:
+        st.info("No data available for reports yet.")
