@@ -1,5 +1,6 @@
 import streamlit as st, pandas as pd, numpy as np, time, datetime, random
 from streamlit_autorefresh import st_autorefresh
+import openai_helper
 
 # ---------- config ----------
 ROOMS   = ["Office A", "Office B", "Lab"]
@@ -58,3 +59,9 @@ if latest.co2 > 1000:
 with st.expander("24-hour trends", expanded=False):
     chart = st.session_state.data.set_index("ts")[METRICS]
     st.line_chart(chart)
+
+# --- AI insight panel ---
+st.markdown("### 🧠 AI-Generated Insights (updates every 5 min)")
+if st.button("🔄 Refresh insights"):
+    openai_helper._CACHE["ts"] = None  # invalidate cache
+st.markdown(openai_helper.generate_insight(st.session_state.data))
