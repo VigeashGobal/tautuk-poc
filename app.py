@@ -139,13 +139,6 @@ st.sidebar.write("- Boost productivity by preventing stale air")
 st.sidebar.write("- Cut HVAC energy with demand-based ventilation")
 st.sidebar.write("- Auto-document IAQ compliance")
 
-# ROI calculator
-st.sidebar.markdown("---")
-occ = st.sidebar.slider("Avg occupants / day",10,500,100)
-rate = st.sidebar.number_input("Electricity rate  ( ¢ /kWh )",0.05,0.5,0.12)
-annual_save = occ*0.12*rate*240   # rough formula
-st.sidebar.metric("Est. yearly savings", f"$ {annual_save:,.0f}")
-
 # Export buttons
 st.sidebar.markdown("---")
 if st.sidebar.button("⬇️ 24h CSV"):
@@ -171,7 +164,7 @@ if len(st.session_state.data) > 1440:
 st.title("Tautuk – Operational Resource Intelligence (POC)")
 
 # Tabs for main content
-main_tab, floor_tab, trends_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends"])
+main_tab, floor_tab, trends_tab, roi_tab = st.tabs(["Diagnostics & Insights", "Floor Map", "Trends", "ROI & Cost"])
 
 with main_tab:
     # device health row
@@ -234,3 +227,10 @@ with trends_tab:
             st.line_chart(chart, height=180)
         else:
             st.info("No data yet - chart will appear once readings are collected")
+
+with roi_tab:
+    st.markdown("### ROI & Cost Calculator")
+    occ = st.slider("Avg occupants / day",10,500,100)
+    rate = st.number_input("Electricity rate  ( ¢ /kWh )",0.05,0.5,0.12)
+    annual_save = occ*0.12*rate*240   # rough formula
+    st.metric("Est. yearly savings", f"$ {annual_save:,.0f}")
