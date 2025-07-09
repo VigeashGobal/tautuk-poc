@@ -2,10 +2,14 @@ import streamlit as st, pandas as pd, numpy as np, time, datetime, random
 from streamlit_autorefresh import st_autorefresh
 import openai_helper
 from collections import OrderedDict
+import base64, io, datetime as _dt
+from reportlab.pdfgen import canvas
+from bs4 import BeautifulSoup
 
 # ---- custom CSS ----
 st.markdown("""
 <style>
+body::before{content:"";position:fixed;inset:0;background:linear-gradient(120deg,#dff1ff 0%,#f6fbff 50%,#eef7ff 100%);animation:bg 24s infinite ease-in-out alternate;z-index:-1}@keyframes bg{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(15deg)}}
 html,body{overflow-x:hidden;} section.main>div{padding-top:.3rem;padding-bottom:.3rem;}
 h1{font-size:2.1rem;margin:0.4rem 0 0.8rem;} .card-grid{margin:0.6rem 0;gap:0.9rem;}
 .badge{margin-top:0.3rem;}
@@ -94,27 +98,51 @@ init_state()
 st_autorefresh(interval=REFRESH_MS, key="auto")
 
 st.sidebar.markdown("### Why it matters")
-st.sidebar.write(
-    "- Boost productivity by preventing stale air\n"
-    "- Cut HVAC energy with demand-based ventilation\n"
-    "- Auto-document IAQ compliance"
-)
+st.sidebar.write("- Boost productivity by preventing stale air")
+st.sidebar.write("- Cut HVAC energy with demand-based ventilation")
+st.sidebar.write("- Auto-document IAQ compliance")
+
+# ROI calculator
+st.sidebar.markdown("---")
+occ = st.sidebar.slider("Avg occupants / day",10,500,100)
+rate = st.sidebar.number_input("Electricity rate  ( ¢ /kWh )",0.05,0.5,0.12)
+annual_save = occ*0.12*rate*240   # rough formula
+st.sidebar.metric("Est. yearly savings", f"$ {annual_save:,.0f}")
+
+# Export buttons
+st.sidebar.markdown("---")
+if st.sidebar.button("⬇️ 24h CSV"):
+    st.download_button("Download", export_csv(st.session_state.data),"tauk_24h.csv",mime="text/csv",key="csv")
+
+if st.sidebar.button("⬇️ 1-week PDF report"):
+    pdf_bytes=build_pdf(st.session_state.data, badge.upper())
+    st.download_button("Download", pdf_bytes,"tauk_report.pdf",mime="application/pdf",key="pdf")
+
 demo_toggle = st.sidebar.checkbox("💡 Force high CO₂ demo", value=False)
 
 # --------- create a new reading each run ---------
-st.session_state.data.loc[len(st.session_state.data)] = generate_reading(demo_toggle)
+# simulate 1% chance a sensor skips
+row=generate_reading(demo_toggle)
+if random.random()>0.01: st.session_state.data.loc[len(st.session_state.data)] = row
+# update last-seen dict
+lst=st.session_state.setdefault("device_last_seen",{}); lst[row["room"]]=_dt.datetime.utcnow()
 
 # keep last 1440 rows (~24 h @1 min) to limit memory
 if len(st.session_state.data) > 1440:
     st.session_state.data = st.session_state.data.iloc[-1440:]
 
 st.title("Tautuk – Operational Resource Intelligence (POC)")
+# device health row
+st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})),unsafe_allow_html=True)
 
 latest = st.session_state.data.iloc[-1]
 
 badge = overall_iaq_status(latest)
+# Outdoor reference
+OUT_CO2 = 420  # ppm baseline
+co2_delta = latest.co2 - OUT_CO2
 color = STATUS_COLORS[badge]
-st.markdown(f"<span class=\"badge\" style=\"background:{color}\">Overall Air Quality: {badge.upper()}</span>", unsafe_allow_html=True)
+st.markdown(f"<span class=\"badge\" style=\"background:{color}\">Overall Air Quality: {badge.upper()}</span> &nbsp;&nbsp; <span style=\"font-size:0.82rem;color:#555\">Indoor-Outdoor ΔCO₂: {co2_delta:.0f} ppm</span>", unsafe_allow_html=True)
 
 container = st.container()
 left,right = container.columns([2,1])
@@ -138,6 +166,11 @@ with left:
             """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
+# floorplan
+room_colors={r: STATUS_COLORS[status_color("co2", latest.co2)] for r in ROOMS}
+svg= floor_svg(room_colors)
+left.image(svg, use_column_width=True)
+
 # ----- alert banner remains unchanged
 if latest.co2 > 1000:
     st.error(f"⚠️ High CO₂ in {latest.room} — {latest.co2:.0f} ppm!")
@@ -156,3 +189,40 @@ with st.expander("24-hour trends", expanded=False):
         st.line_chart(chart, height=180)
     else:
         st.info("No data yet - chart will appear once readings are collected")
+
+# ### --- helpers: wow section ------------------------------------
+def device_health_bar(last_seen_dict, offline_after=8):
+    """Return HTML row of dots (green good / gray offline)."""
+    now=_dt.datetime.utcnow()
+    dot=[]
+    for r in ROOMS:
+        age=(now-last_seen_dict.get(r,now)).total_seconds()
+        color="#2ecc71" if age<offline_after else "#cccccc"
+        dot.append(f"<span style='color:{color};font-size:22px;'>●</span>")
+    return " ".join(dot)
+
+def floor_svg(colormap):
+    """Read assets/floor.svg and recolor each room based on colormap."""
+    with open("assets/floor.svg") as f:
+        soup=BeautifulSoup(f.read(),"xml")
+    for rid,color in colormap.items():
+        node=soup.find(id=rid)
+        if node: node["fill"]=color
+    return soup.decode()
+
+def export_csv(df):
+    return df.to_csv(index=False).encode()
+
+def build_pdf(df, overall_status):
+    buf=io.BytesIO()
+    c=canvas.Canvas(buf,pagesize=(595,842))  # A4-ish
+    c.setFont("Helvetica-Bold",20); c.drawString(50,800,"Tautuk IAQ Weekly Report")
+    c.setFont("Helvetica",12); c.drawString(50,780,f"Generated: {_dt.datetime.utcnow():%Y-%m-%d %H:%M} UTC")
+    c.setFont("Helvetica-Bold",14); c.drawString(50,740,f"Overall status: {overall_status.upper()}")
+    y=700; c.setFont("Helvetica",11)
+    for m,label in [("co2","CO₂ ppm"),("temp","Temp °C"),("rh","Humidity %"),("pm","PM2.5 µg/m³")]:
+        c.drawString(60,y,f"{label}  avg: {df[m].mean():.1f}   max: {df[m].max():.1f}")
+        y-=20
+    c.showPage(); c.save(); buf.seek(0)
+    return buf.read()
+# ------------------------------------------------------------------
