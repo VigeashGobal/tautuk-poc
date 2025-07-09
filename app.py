@@ -198,7 +198,7 @@ def generate_reading(force_high_co2=False, force_high_pm=False, force_high_temp=
     return {"ts": datetime.datetime.utcnow(), "room": random.choice(ROOMS), **nxt}
 
 # ---------- page setup ----------
-st.set_page_config(page_title="Tautuk POC", page_icon="assets/logo.png", layout="wide", initial_sidebar_state="expanded", theme={"base": "dark", "primaryColor": "#0E6BA8", "backgroundColor": "#18191A", "secondaryBackgroundColor": "#23272F", "textColor": "#F5F6FA", "font": "sans serif"})
+st.set_page_config(page_title="Tautuk POC", page_icon="assets/logo.png", layout="wide", initial_sidebar_state="expanded")
 init_state()
 
 # auto-refresh (returns a counter we could use if needed)
