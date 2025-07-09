@@ -80,13 +80,39 @@ body, html { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
 [data-baseweb="tab"]:active { color: #F5B700; }
 
 /* Card grid and metrics */
-.card-grid {margin:0.6rem 0;gap:0.9rem;}
-.metric-card {background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.04); border: 1.5px solid #e6e6f0; padding: 1.1rem 1rem; text-align: center; transition: box-shadow .15s, border .15s;}
-.metric-card:hover {box-shadow: 0 8px 32px rgba(123,63,228,0.10); border: 1.5px solid #7B3FE4;}
-.metric-label {font-size: 0.85rem; color: #5e5e5e; letter-spacing: 0.2px; margin-bottom: 4px;}
-.metric-value {font-size: 2.2rem; font-weight: 600; margin-bottom: 0;}
-.metric-unit {font-size: 0.80rem; color: #7a7a7a;}
-.metric-border {height: 4px; width: 100%; border-radius: 4px 4px 0 0; margin: -1.1rem -1rem 0.9rem;}
+.card-grid {
+  margin: 1.2rem auto;
+  gap: 2.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 700px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 22px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.10);
+  padding: 2.2rem 1.5rem;
+}
+.metric-card {
+  background: #23272E;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  border: 1.5px solid #23272E;
+  padding: 1.2rem 1.1rem;
+  text-align: center;
+  min-width: 140px;
+  max-width: 180px;
+  flex: 1 1 160px;
+  margin: 0.5rem;
+  transition: box-shadow .15s, border .15s;
+}
+.metric-card:hover {
+  box-shadow: 0 8px 32px rgba(123,63,228,0.10);
+  border: 1.5px solid #7B3FE4;
+}
+.metric-label {font-size: 0.95rem; color: #C0C4CC; letter-spacing: 0.2px; margin-bottom: 4px;}
+.metric-value {font-size: 2.3rem; font-weight: 700; margin-bottom: 0; color: #fff;}
+.metric-unit {font-size: 0.90rem; color: #A4A7B0;}
+.metric-border {height: 4px; width: 100%; border-radius: 4px 4px 0 0; margin: -1.1rem -1.1rem 0.9rem; opacity:0.8;}
 
 /* Status badge */
 .badge {display: inline-block; padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; color:#fff; background: linear-gradient(90deg,#0E6BA8,#7B3FE4,#F5B700);}
