@@ -102,16 +102,6 @@ h2, h3, h4 { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-weigh
 </style>
 """, unsafe_allow_html=True)
 
-# Sticky header with logo and title
-st.markdown(
-    f"""
-    <div class='sticky-header'>
-        <span class='app-title'>Tautuk – Operational Resource Intelligence (POC)</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 # ---------- helpers ----------
 STATUS_COLORS = OrderedDict([
     ("good",  "#2ecc71"),   # green
