@@ -251,7 +251,6 @@ st.sidebar.markdown("""
 with main_tab:
     # No header, just show device health row at the top
     st.markdown(device_health_bar(st.session_state.get("device_last_seen",{})), unsafe_allow_html=True)
-    st.markdown("<div style='margin-bottom: 2rem;'></div>", unsafe_allow_html=True)
 
     # --- main air quality widgets/cards ---
     if not st.session_state.data.empty:
